@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="/app.css" rel="stylesheet" />
+    <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script>
+        const appId = 'sandbox-sq0idb-EdHsYlG8TPVZUe8vt1jHxg';
+        const locationId = 'LHJ1ZXJ8YSV8W';
+
+        async function initializeCard(payments, container) {
+            const card = await payments.card();
+            await card.attach(container);
+
+            return card;
+        }
+
+        async function createPayment(token) {
+            const body = JSON.stringify({
+                locationId,
+                sourceId: token,
+                autocomplete: false,
+                money: document.getElementById('half-total').value,
+                orderId: document.getElementById('order-id').value,
+            });
+            console.log('the body: ', body)
+
+            const paymentResponse = await fetch('/payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body,
+            });
+
+            if (paymentResponse.ok) {
+                return paymentResponse.json();
+            }
+
+            const errorBody = await paymentResponse.text();
+            throw new Error(errorBody);
+        }
+
+        async function tokenize(paymentMethod) {
+            console.log('yikes: ', paymentMethod)
+            const tokenResult = await paymentMethod.tokenize();
+            console.log('yoooo:', tokenResult)
+            if (tokenResult.status === 'OK') {
+                return tokenResult.token
+            } else {
+                let errorMessage = `Tokenization failed with status: ${tokenResult.status}`;
+                if (tokenResult.errors) {
+                    errorMessage += ` and errors: ${JSON.stringify(
+                        tokenResult.errors
+                    )}`;
+                }
+
+                throw new Error(errorMessage);
+            }
+        }
+
+        async function createOrder(token) {
+            const value = document.querySelector('input[name="food"]:checked').value
+            const id = document.querySelector('input[name="food"]:checked').id
+
+            const body = JSON.stringify({
+                locationId,
+                lineItems: [
+                    {
+                        name: id,
+                        quantity: '1',
+                        basePriceMoney: {
+                            amount: value,
+                            currency: 'USD'
+                        }
+                    }
+                ]
+            });
+
+            const orderResponse = await fetch('/create-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body,
+            });
+
+            if (orderResponse.ok) {
+                return orderResponse.json();
+            }
+
+            const errorBody = await orderResponse.text();
+            throw new Error(errorBody);
+        }
+
+        async function getOrder(id) {
+            const orderResponse = await fetch(`/order?id=${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (orderResponse.ok) {
+                return orderResponse.json();
+            }
+
+            const errorBody = await orderResponse.text();
+            throw new Error(errorBody);
+        }
+
+        // status is either SUCCESS or FAILURE;
+        function displayPaymentResults(status, paymentStatusContainer) {
+            const statusContainer = document.getElementById(paymentStatusContainer);
+            if (status === 'SUCCESS') {
+                statusContainer.classList.remove('is-failure');
+                statusContainer.classList.add('is-success');
+            } else {
+                statusContainer.classList.remove('is-success');
+                statusContainer.classList.add('is-failure');
+            }
+
+            statusContainer.style.visibility = 'visible';
+        }
+
+        async function displayStep2(status, orderId) {
+            const orderForm = document.getElementById('order-form')
+            const partialPaymentForm = document.getElementById('partial-payment-form')
+            if (status === 'SUCCESS') {
+                orderForm.style.display = 'none';
+                partialPaymentForm.style.display = 'block';
+                const { order } = await getOrder(orderId);
+                const halfTotal = order.totalMoney.amount / 2;
+                console.log({ order })
+                document.getElementById('order-id').value = order.id;
+                document.getElementById('half-total').value = halfTotal;
+                document.getElementById('order-number-text').innerHTML = `Order ID: ${order.id}`
+                document.getElementById('order-title').innerHTML = `Item: ${order.lineItems[0].name}`;
+                document.getElementById('price').innerHTML = `Price: $${(order.totalMoney.amount / 100).toFixed(2)}`;
+                document.getElementById('card-button1').innerHTML = `Pay $${(halfTotal / 100).toFixed(2)}`;
+                document.getElementById('card-button2').innerHTML = `Pay $${(halfTotal / 100).toFixed(2)}`;
+                displayStep3();
+            }
+        }
+
+        async function displayStep3() {
+
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            if (!window.Square) {
+                throw new Error('Square.js failed to load properly');
+            }
+
+            let payments;
+            try {
+                payments = window.Square.payments(appId, locationId);
+            } catch {
+                const statusContainer = document.getElementById(
+                    'payment-status-container'
+                );
+                statusContainer.className = 'missing-credentials';
+                statusContainer.style.visibility = 'visible';
+                return;
+            }
+
+            let card1;
+            let card2;
+            try {
+                card1 = await initializeCard(payments, '#card-container1');
+                card2 = await initializeCard(payments, '#card-container2');
+            } catch (e) {
+                console.error('Initializing Credit Card failed', e);
+            }
+
+            async function handleCompletePurchase(event) {
+                paymentButton.disabled = true
+                const body = JSON.stringify({
+                    orderId: document.getElementById('order-id').value,
+                    paymentIds: [document.getElementById('payment-id1').value, document.getElementById('payment-id2').value],
+                });
+                const completePaymentResponse = await fetch('/complete-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body,
+                });
+
+                if (completePaymentResponse.ok) {
+                    return completePaymentResponse.json();
+                }
+            }
+
+            // Checkpoint 2.
+            async function handlePaymentMethodSubmission(event, paymentMethod, cardButton, paymentStatusContainer) {
+                event.preventDefault();
+
+                try {
+                    // disable the submit button as we await tokenization and make a payment request.
+                    cardButton.disabled = true;
+                    const token = await tokenize(paymentMethod);
+                    const paymentResults = await createPayment(token);
+                    displayPaymentResults('SUCCESS', paymentStatusContainer);
+                    console.log({ paymentResults })
+                    console.debug('Payment Success', paymentResults);
+                    if (document.getElementById('payment-id1').value) {
+                        document.getElementById('payment-id2').value = paymentResults.payment.id;
+                        document.getElementById('partial-payment-form').style.display = 'none';
+                        document.getElementById('final-payment-form').style.display = 'block'
+                    } else {
+                        document.getElementById('payment-id1').value = paymentResults.payment.id;
+                    }
+                } catch (e) {
+                    cardButton.disabled = false;
+                    displayPaymentResults('FAILURE', paymentStatusContainer);
+                    console.error(e.message);
+                }
+            }
+
+            async function handleCreateOrder() {
+                event.preventDefault();
+                try {
+                    orderButton.disabled = true;
+                    const orderResult = await createOrder();
+                    displayStep2('SUCCESS', orderResult.order.id);
+                } catch (e) {
+                    console.log('the e: ', e)
+                    displayStep2('FAILURE');
+                }
+            }
+
+
+            const orderButton = document.getElementById('order-button');
+            orderButton.addEventListener('click', async function (event) {
+                await handleCreateOrder();
+            });
+
+            const cardButton1 = document.getElementById('card-button1');
+            cardButton1.addEventListener('click', async function (event) {
+                await handlePaymentMethodSubmission(event, card1, cardButton1, 'payment-status-container1');
+            });
+
+            const cardButton2 = document.getElementById('card-button2');
+            cardButton2.addEventListener('click', async function (event) {
+                await handlePaymentMethodSubmission(event, card2, cardButton2, 'payment-status-container2');
+
+            });
+
+            const paymentButton = document.getElementById('complete-payment-button');
+            paymentButton.addEventListener('click', async () => {
+                const response = await handleCompletePurchase(event);
+                alert(response);
+            })
+
+        });
+    </script>
+</head>
+
+<body>
+    <input id="half-total" type="hidden" />
+    <input id="order-id" type="hidden" />
+    <input id="payment-id1" type="hidden" />
+    <input id="payment-id2" type="hidden" />
+    <form id="order-form">
+        <h1>Step 1: Create an Order</h1>
+        <div id="order-container">
+            <input type="radio" id="Hamburger" name="food" value="1200">
+            <label for="food1">Hamburger - $12.00</label>
+            <input type="radio" id="Hotdog" name="food" value="400">
+            <label for="food2">Hotdog - $4.00</label>
+            <input type="radio" id="Taco" name="food" value="200">
+            <label for="food3">Taco - $2.00</label>
+        </div>
+        <button id="order-button" type="button">Create Order</button>
+    </form>
+
+    <form id="partial-payment-form">
+        <h1>Step 2: Make Partial Payments</h1>
+        <h2 id="order-number-text">Order number: </h2>
+        <h3 id="order-title">Item: </h3>
+        <p id="price">Price: </p>
+        <div id="partial-payment-container">
+            <form id="payment-form1">
+                <div id="card-container1"></div>
+                <button id="card-button1" type="button"></button>
+            </form>
+            <div id="payment-status-container1"></div>
+
+            <form id="payment-form2">
+                <div id="card-container2"></div>
+                <button id="card-button2" type="button"></button>
+            </form>
+            <div id="payment-status-container2"></div>
+        </div>
+    </form>
+
+    <form id="final-payment-form">
+        <h1>Step 3: Complete Purchase</h1>
+        <button id="complete-payment-button" type="button">Submit Payment</button>
+    </form>
+</body>
+
+</html>

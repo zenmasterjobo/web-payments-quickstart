@@ -11,21 +11,28 @@ const retry = require('async-retry');
 const logger = require('./server/logger');
 // schema validates incoming requests
 const {
-  validatePaymentPayload,
+  //  validatePaymentPayload,
   validateCreateCardPayload,
 } = require('./server/schema');
 // square provides the API client and error types
 const { ApiError, client: square } = require('./server/square');
 const { nanoid } = require('nanoid');
 
+// todo: make this nicer
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
 async function createPayment(req, res) {
   const payload = await json(req);
   logger.debug(JSON.stringify(payload));
   // We validate the payload for specific fields. You may disable this feature
   // if you would prefer to handle payload validation on your own.
-  if (!validatePaymentPayload(payload)) {
-    throw createError(400, 'Bad Request');
-  }
+
+  // TODO: adapt payload to accept autocomplete and partialAuth
+  // if (!validatePaymentPayload(payload)) {
+  //   throw createError(400, 'Bad Request');
+  // }
   await retry(async (bail, attempt) => {
     try {
       logger.debug('Creating payment', { attempt });
@@ -35,6 +42,7 @@ async function createPayment(req, res) {
         idempotencyKey,
         locationId: payload.locationId,
         sourceId: payload.sourceId,
+        autocomplete: payload.autocomplete ? true : false,
         // While it's tempting to pass this data from the client
         // Doing so allows bad actor to modify these values
         // Instead, leverage Orders to create an order on the server
@@ -42,12 +50,16 @@ async function createPayment(req, res) {
         // See Orders documentation: https://developer.squareup.com/docs/orders-api/what-it-does
         amountMoney: {
           // the expected amount is in cents, meaning this is $1.00.
-          amount: '100',
+          amount: payload.money || 100,
           // If you are a non-US account, you must change the currency to match the country in which
           // you are accepting the payment.
           currency: 'USD',
         },
       };
+
+      if (payload.orderId) {
+        payment.orderId = payload.orderId;
+      }
 
       if (payload.customerId) {
         payment.customerId = payload.customerId;
@@ -60,11 +72,20 @@ async function createPayment(req, res) {
         payment.verificationToken = payload.verificationToken;
       }
 
+      console.log('the payment:', payment);
       const { result, statusCode } = await square.paymentsApi.createPayment(
         payment
       );
 
-      logger.info('Payment succeeded!', { result, statusCode });
+      const amountMoney = result.payment.amountMoney;
+      const cardDetails = result.payment.cardDetails;
+
+      logger.info('Payment succeeded!', {
+        result,
+        statusCode,
+        amountMoney,
+        cardDetails,
+      });
 
       send(res, statusCode, {
         success: true,
@@ -140,6 +161,112 @@ async function storeCard(req, res) {
   });
 }
 
+async function createOrder(req, res) {
+  const payload = await json(req);
+  logger.debug(JSON.stringify(payload));
+
+  await retry(async (bail, attempt) => {
+    try {
+      logger.debug('Creating Order', { attempt });
+
+      const idempotencyKey = payload.idempotencyKey || nanoid();
+      const body = {
+        idempotencyKey,
+        order: {
+          locationId: payload.locationId,
+          lineItems: payload.lineItems,
+        },
+      };
+
+      const { result, statusCode } = await square.ordersApi.createOrder(body);
+
+      const orderId = result.order.id;
+
+      logger.info('Create Order succeeded!', {
+        result,
+        statusCode,
+        orderId,
+      });
+
+      send(res, statusCode, {
+        success: true,
+        order: {
+          id: result.order.id,
+          status: result.order.status,
+        },
+      });
+    } catch (ex) {
+      if (ex instanceof ApiError) {
+        // likely an error in the request. don't retry
+        logger.error(ex.errors);
+        bail(ex);
+      } else {
+        // IDEA: send to error reporting service
+        logger.error(`Error creating order on attempt ${attempt}: ${ex}`);
+        throw ex; // to attempt retry
+      }
+    }
+  });
+}
+
+async function getOrder(req, res) {
+  const { id } = req.query;
+  try {
+    const { result, statusCode } = await square.ordersApi.retrieveOrder(id);
+    logger.info('Retrieve Order succeeded!', {
+      result,
+      statusCode,
+    });
+
+    send(res, statusCode, result);
+  } catch (e) {
+    logger.error('Error fetching order', e);
+  }
+}
+
+async function completePayment(req, res) {
+  const payload = await json(req);
+  logger.debug(JSON.stringify(payload));
+
+  try {
+    logger.debug('Completing Payment');
+
+    const idempotencyKey = payload.idempotencyKey || nanoid();
+    const body = {
+      idempotencyKey,
+      paymentIds: payload.paymentIds,
+    };
+
+    const { result, statusCode } = await square.ordersApi.payOrder(
+      payload.orderId,
+      body
+    );
+
+    logger.info('Complete Payment succeeded!', {
+      result,
+      statusCode,
+    });
+
+    send(res, statusCode, {
+      success: true,
+      order: {
+        id: result.order.id,
+        status: result.order.state,
+        result: result.order,
+      },
+    });
+  } catch (ex) {
+    if (ex instanceof ApiError) {
+      // likely an error in the request. don't retry
+      logger.error(ex.errors);
+    } else {
+      // IDEA: send to error reporting service
+      logger.error(`Error completing payment: ${ex}`);
+      throw ex; // to attempt retry
+    }
+  }
+}
+
 // serve static files like index.html and favicon.ico from public/ directory
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
@@ -150,6 +277,9 @@ async function serveStatic(req, res) {
 
 // export routes to be served by micro
 module.exports = router(
+  post('/create-order', createOrder),
+  get('/order', getOrder),
+  post('/complete-payment', completePayment),
   post('/payment', createPayment),
   post('/card', storeCard),
   get('/*', serveStatic)
