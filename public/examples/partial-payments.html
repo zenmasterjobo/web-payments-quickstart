@@ -4,11 +4,11 @@
 <head>
     <link href="/app.css" rel="stylesheet" />
     <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="/helpers/partial-payment-helpers.js"></script>
     <script>
         const appId = 'sandbox-sq0idb-EdHsYlG8TPVZUe8vt1jHxg';
         const locationId = 'LHJ1ZXJ8YSV8W';
-
+        console.log(hello())
         async function initializeCard(payments, container) {
             const card = await payments.card();
             await card.attach(container);
@@ -21,8 +21,8 @@
                 locationId,
                 sourceId: token,
                 autocomplete: false,
-                money: document.getElementById('half-total').value,
-                orderId: document.getElementById('order-id').value,
+                money: el('half-total').value,
+                orderId: el('order-id').value,
             });
             console.log('the body: ', body)
 
@@ -111,7 +111,7 @@
 
         // status is either SUCCESS or FAILURE;
         function displayPaymentResults(status, paymentStatusContainer) {
-            const statusContainer = document.getElementById(paymentStatusContainer);
+            const statusContainer = el(paymentStatusContainer);
             if (status === 'SUCCESS') {
                 statusContainer.classList.remove('is-failure');
                 statusContainer.classList.add('is-success');
@@ -124,21 +124,21 @@
         }
 
         async function displayStep2(status, orderId) {
-            const orderForm = document.getElementById('order-form')
-            const partialPaymentForm = document.getElementById('partial-payment-form')
+            const orderForm = el('order-form')
+            const partialPaymentForm = el('partial-payment-form')
             if (status === 'SUCCESS') {
                 orderForm.style.display = 'none';
                 partialPaymentForm.style.display = 'block';
                 const { order } = await getOrder(orderId);
                 const halfTotal = order.totalMoney.amount / 2;
-                console.log({ order })
-                document.getElementById('order-id').value = order.id;
-                document.getElementById('half-total').value = halfTotal;
-                document.getElementById('order-number-text').innerHTML = `Order ID: ${order.id}`
-                document.getElementById('order-title').innerHTML = `Item: ${order.lineItems[0].name}`;
-                document.getElementById('price').innerHTML = `Price: $${(order.totalMoney.amount / 100).toFixed(2)}`;
-                document.getElementById('card-button1').innerHTML = `Pay $${(halfTotal / 100).toFixed(2)}`;
-                document.getElementById('card-button2').innerHTML = `Pay $${(halfTotal / 100).toFixed(2)}`;
+                console.log(el('order-id'));
+                el('order-id').value = order.id;
+                el('half-total').value = halfTotal;
+                el('order-number-text').innerHTML = `Order ID: ${order.id}`
+                el('order-title').innerHTML = `Item: ${order.lineItems[0].name}`;
+                el('price').innerHTML = `Price: $${(order.totalMoney.amount / 100).toFixed(2)}`;
+                el('card-button1').innerHTML = `Pay $${(halfTotal / 100).toFixed(2)}`;
+                el('card-button2').innerHTML = `Pay $${(halfTotal / 100).toFixed(2)}`;
                 displayStep3();
             }
         }
@@ -156,7 +156,7 @@
             try {
                 payments = window.Square.payments(appId, locationId);
             } catch {
-                const statusContainer = document.getElementById(
+                const statusContainer = el(
                     'payment-status-container'
                 );
                 statusContainer.className = 'missing-credentials';
@@ -176,8 +176,8 @@
             async function handleCompletePurchase(event) {
                 paymentButton.disabled = true
                 const body = JSON.stringify({
-                    orderId: document.getElementById('order-id').value,
-                    paymentIds: [document.getElementById('payment-id1').value, document.getElementById('payment-id2').value],
+                    orderId: el('order-id').value,
+                    paymentIds: [el('payment-id1').value, el('payment-id2').value],
                 });
                 const completePaymentResponse = await fetch('/complete-payment', {
                     method: 'POST',
@@ -204,12 +204,12 @@
                     displayPaymentResults('SUCCESS', paymentStatusContainer);
                     console.log({ paymentResults })
                     console.debug('Payment Success', paymentResults);
-                    if (document.getElementById('payment-id1').value) {
-                        document.getElementById('payment-id2').value = paymentResults.payment.id;
-                        document.getElementById('partial-payment-form').style.display = 'none';
-                        document.getElementById('final-payment-form').style.display = 'block'
+                    if (el('payment-id1').value) {
+                        el('payment-id2').value = paymentResults.payment.id;
+                        el('partial-payment-form').style.display = 'none';
+                        el('final-payment-form').style.display = 'block'
                     } else {
-                        document.getElementById('payment-id1').value = paymentResults.payment.id;
+                        el('payment-id1').value = paymentResults.payment.id;
                     }
                 } catch (e) {
                     cardButton.disabled = false;
@@ -231,23 +231,23 @@
             }
 
 
-            const orderButton = document.getElementById('order-button');
+            const orderButton = el('order-button');
             orderButton.addEventListener('click', async function (event) {
                 await handleCreateOrder();
             });
 
-            const cardButton1 = document.getElementById('card-button1');
+            const cardButton1 = el('card-button1');
             cardButton1.addEventListener('click', async function (event) {
                 await handlePaymentMethodSubmission(event, card1, cardButton1, 'payment-status-container1');
             });
 
-            const cardButton2 = document.getElementById('card-button2');
+            const cardButton2 = el('card-button2');
             cardButton2.addEventListener('click', async function (event) {
                 await handlePaymentMethodSubmission(event, card2, cardButton2, 'payment-status-container2');
 
             });
 
-            const paymentButton = document.getElementById('complete-payment-button');
+            const paymentButton = el('complete-payment-button');
             paymentButton.addEventListener('click', async () => {
                 const response = await handleCompletePurchase(event);
                 alert(response);
