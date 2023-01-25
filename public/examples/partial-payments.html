@@ -220,21 +220,9 @@
 
             async function handleCreateOrder() {
                 event.preventDefault();
-                try {
-                    orderButton.disabled = true;
-                    const orderResult = await createOrder();
-                    displayStep2('SUCCESS', orderResult.order.id);
-                } catch (e) {
-                    console.log('the e: ', e)
-                    displayStep2('FAILURE');
-                }
+
             }
 
-
-            const orderButton = el('order-button');
-            orderButton.addEventListener('click', async function (event) {
-                await handleCreateOrder();
-            });
 
             const cardButton1 = el('card-button1');
             cardButton1.addEventListener('click', async function (event) {
@@ -263,16 +251,7 @@
     <input id="payment-id1" type="hidden" />
     <input id="payment-id2" type="hidden" />
     <form id="order-form">
-        <h1>Step 1: Create an Order</h1>
-        <div id="order-container">
-            <input type="radio" id="Hamburger" name="food" value="1200">
-            <label for="food1">Hamburger - $12.00</label>
-            <input type="radio" id="Hotdog" name="food" value="400">
-            <label for="food2">Hotdog - $4.00</label>
-            <input type="radio" id="Taco" name="food" value="200">
-            <label for="food3">Taco - $2.00</label>
-        </div>
-        <button id="order-button" type="button">Create Order</button>
+
     </form>
 
     <form id="partial-payment-form">

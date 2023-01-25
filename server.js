@@ -17,6 +17,7 @@ const {
 // square provides the API client and error types
 const { ApiError, client: square } = require('./server/square');
 const { nanoid } = require('nanoid');
+const { createSquarePayment } = require('./server/server-helpers');
 
 // todo: make this nicer
 BigInt.prototype.toJSON = function () {
@@ -33,81 +34,20 @@ async function createPayment(req, res) {
   // if (!validatePaymentPayload(payload)) {
   //   throw createError(400, 'Bad Request');
   // }
-  await retry(async (bail, attempt) => {
-    try {
-      logger.debug('Creating payment', { attempt });
-
-      const idempotencyKey = payload.idempotencyKey || nanoid();
-      const payment = {
-        idempotencyKey,
-        locationId: payload.locationId,
-        sourceId: payload.sourceId,
-        autocomplete: payload.autocomplete ? true : false,
-        // While it's tempting to pass this data from the client
-        // Doing so allows bad actor to modify these values
-        // Instead, leverage Orders to create an order on the server
-        // and pass the Order ID to createPayment rather than raw amounts
-        // See Orders documentation: https://developer.squareup.com/docs/orders-api/what-it-does
-        amountMoney: {
-          // the expected amount is in cents, meaning this is $1.00.
-          amount: payload.money || 100,
-          // If you are a non-US account, you must change the currency to match the country in which
-          // you are accepting the payment.
-          currency: 'USD',
-        },
-      };
-
-      if (payload.orderId) {
-        payment.orderId = payload.orderId;
-      }
-
-      if (payload.customerId) {
-        payment.customerId = payload.customerId;
-      }
-
-      // VerificationDetails is part of Secure Card Authentication.
-      // This part of the payload is highly recommended (and required for some countries)
-      // for 'unauthenticated' payment methods like Cards.
-      if (payload.verificationToken) {
-        payment.verificationToken = payload.verificationToken;
-      }
-
-      console.log('the payment:', payment);
-      const { result, statusCode } = await square.paymentsApi.createPayment(
-        payment
-      );
-
-      const amountMoney = result.payment.amountMoney;
-      const cardDetails = result.payment.cardDetails;
-
-      logger.info('Payment succeeded!', {
-        result,
-        statusCode,
-        amountMoney,
-        cardDetails,
-      });
-
-      send(res, statusCode, {
-        success: true,
-        payment: {
-          id: result.payment.id,
-          status: result.payment.status,
-          receiptUrl: result.payment.receiptUrl,
-          orderId: result.payment.orderId,
-        },
-      });
-    } catch (ex) {
-      if (ex instanceof ApiError) {
-        // likely an error in the request. don't retry
-        logger.error(ex.errors);
-        bail(ex);
-      } else {
-        // IDEA: send to error reporting service
-        logger.error(`Error creating payment on attempt ${attempt}: ${ex}`);
-        throw ex; // to attempt retry
-      }
-    }
-  });
+  try {
+    const { result, statusCode } = createSquarePayment(payload);
+    send(res, statusCode, {
+      success: true,
+      payment: {
+        id: result.payment.id,
+        status: result.payment.status,
+        receiptUrl: result.payment.receiptUrl,
+        orderId: result.payment.orderId,
+      },
+    });
+  } catch (e) {
+    console.log('There was an error creating the payment:', e);
+  }
 }
 
 async function storeCard(req, res) {
@@ -267,6 +207,116 @@ async function completePayment(req, res) {
   }
 }
 
+async function purchaseGiftCard(req, res) {
+  // Step 1: Create order for the requested amount
+  const payload = await json(req);
+  const idempotencyKey = payload.idempotencyKey || nanoid();
+  let body = {
+    idempotencyKey,
+    order: {
+      locationId: payload.locationId,
+      // fulfillments: [
+      //   {
+      //     type: 'SHIPMENT',
+      //     shipment_details: {
+      //       recipient: {
+      //         display_name: 'John Doe',
+      //       },
+      //     },
+      //   },
+      // ],
+      lineItems: [
+        {
+          name: 'Square Sandbox Giftcard',
+          itemType: 'GIFT_CARD',
+          quantity: '1',
+          basePriceMoney: {
+            amount: 1000,
+            currency: 'USD',
+          },
+        },
+      ],
+    },
+  };
+  let result, statusCode;
+  try {
+    ({ result, statusCode } = await square.ordersApi.createOrder(body));
+  } catch (e) {
+    logger.error('failed to create giftcard order', e);
+  }
+  if (statusCode !== 200) {
+    send(res, statusCode, { success: false });
+    return;
+  }
+
+  // Step 2: Pay for the order
+  const orderId = result.order.id;
+  const lineItemUid = result.order.lineItems[0].uid;
+  const data = {
+    ...payload,
+    orderId,
+    autocomplete: true,
+  };
+
+  ({ result, statusCode } = await createSquarePayment(data));
+  if (statusCode !== 200) {
+    send(res, statusCode, { success: false });
+    return;
+  }
+
+  // Step 3: Create a gift Card
+  try {
+    ({ result, statusCode } = await square.giftCardsApi.createGiftCard({
+      idempotencyKey: nanoid(),
+      locationId: payload.locationId,
+      giftCard: {
+        type: 'DIGITAL',
+      },
+    }));
+  } catch (e) {
+    logger.error('failed to create giftcard', e);
+  }
+
+  if (statusCode !== 200) {
+    send(res, statusCode, { success: false });
+    return;
+  }
+
+  // Step 4: Activate the gift card
+
+  try {
+    ({ result, statusCode } =
+      await square.giftCardActivitiesApi.createGiftCardActivity({
+        idempotencyKey: nanoid(),
+        giftCardActivity: {
+          type: 'ACTIVATE',
+          locationId: payload.locationId,
+          giftCardGan: result.giftCard.gan,
+          activateActivityDetails: {
+            orderId,
+            lineItemUid,
+          },
+        },
+      }));
+
+    console.log(result);
+  } catch (error) {
+    console.log(error);
+  }
+
+  if (statusCode !== 200) {
+    send(res, statusCode, { success: false });
+    return;
+  }
+
+  send(res, statusCode, {
+    success: true,
+    result: {
+      gan: result.giftCardActivity.giftCardGan,
+    },
+  });
+}
+
 // serve static files like index.html and favicon.ico from public/ directory
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
@@ -281,6 +331,7 @@ module.exports = router(
   get('/order', getOrder),
   post('/complete-payment', completePayment),
   post('/payment', createPayment),
+  post('/purchase-gift-card', purchaseGiftCard),
   post('/card', storeCard),
   get('/*', serveStatic)
 );
