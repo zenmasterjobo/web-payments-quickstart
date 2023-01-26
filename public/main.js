@@ -4,7 +4,9 @@ import store from './store/index.js';
 // import List from './components/list.js';
 // import Status from './components/status.js';
 import Step from './components/step.js';
-import { handleCreateOrder, handlePaymentMethodSubmission, initializeCards } from './lib/helpers.js';
+import Terminal from './components/terminal.js';
+
+import { handleCreateOrder, handlePaymentMethodSubmission, initializeCards, handleCompletePurchase } from './lib/helpers.js';
 
 const appId = 'sandbox-sq0idb-EdHsYlG8TPVZUe8vt1jHxg';
 const locationId = 'LHJ1ZXJ8YSV8W';
@@ -29,24 +31,27 @@ document.addEventListener('DOMContentLoaded', async function () {
     let card, giftCard;
     try {
         ({ card, giftCard } = await initializeCards(payments));
-        console.log('the card: ', card);
-        console.log('the gift card: ', giftCard)
     } catch (e) {
         console.error('Initializing Cards failed', e);
     }
     const cardButton = document.getElementById('card-button');
     cardButton.addEventListener('click', async function (event) {
         const paymentData = {
-            path: '/purchase-gift-card',
+            path: '/payment',
             body: {
-                money: 1000,
-                autocomplete: true,
-                orderId: store.state.orderId,
+                money: store.state.data.total * 100,
+                autocomplete: false,
+                orderId: store.state.data.orderId,
             }
         }
-        const { result } = await handlePaymentMethodSubmission(event, card, cardButton, paymentData);
-        store.dispatch('setData', { giftCardGan: result.gan });
+        const result = await handlePaymentMethodSubmission(event, card, cardButton, paymentData);
+        console.log('the result: ', result)
+        store.dispatch('setData', {
+            apiCall: 'POST /v2/payments',
+            ccPaymentId: result.payment.id
+        })
         store.dispatch('nextStep', 1);
+
     });
 
     const giftCardButton = document.getElementById('gift-card-button');
@@ -56,11 +61,18 @@ document.addEventListener('DOMContentLoaded', async function () {
             body: {
                 money: 1000,
                 autocomplete: false,
-                orderId: store.state.ordierId,
+                orderId: store.state.data.orderId,
             }
-
         }
-        await handlePaymentMethodSubmission(event, giftCard, giftCardButton, paymentData);
+        const result = await handlePaymentMethodSubmission(event, giftCard, giftCardButton, paymentData);
+        console.log('the result', result);
+        store.dispatch('setData', {
+            total: (store.state.data.total - 10).toFixed(2),
+            apiCall: 'POST /v2/payments',
+            gcPaymentId: result.payment.id,
+        })
+        store.dispatch('nextStep', 1)
+
     });
 
 
@@ -70,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 // const inputElement = document.querySelector('#new-item-field');
 // const nextButton = document.getElementById('next-step');
 const orderButton = document.getElementById('order-button');
+const completePayment = document.getElementById('complete-payment');
 
 // formElement.addEventListener('submit', e => {
 //     e.preventDefault();
@@ -82,22 +95,40 @@ const orderButton = document.getElementById('order-button');
 //     }
 // });
 
-// nextButton.addEventListener('click', e => {
-//     store.dispatch('nextStep', 1);
-// })
 
 orderButton.addEventListener('click', async (e) => {
     const result = await handleCreateOrder();
-    store.dispatch('setData', { orderId: result.order.id })
+    console.log({ result })
+    store.dispatch('setData', {
+        orderId: result.order.id,
+        itemName: result.order.itemName,
+        price: result.order.price,
+        total: result.order.price,
+        apiCall: 'POST /v2/orders',
+    });
     store.dispatch('nextStep', 1);
 });
+
+completePayment.addEventListener('click', async () => {
+    completePayment.disabled = true
+    const result = await handleCompletePurchase({
+        orderId: store.state.data.orderId,
+        paymentIds: [
+            store.state.data.ccPaymentId,
+            store.state.data.gcPaymentId
+        ]
+    });
+    console.log('the result: ', result);
+})
 
 // const countInstance = new Count();
 // const listInstance = new List();
 // const statusInstance = new Status();
 const stepInstance = new Step();
+const terminalInstance = new Terminal();
 
 // countInstance.render();
 // listInstance.render();
 // statusInstance.render();
 stepInstance.render();
+terminalInstance.render();

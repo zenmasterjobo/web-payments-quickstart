@@ -3,6 +3,6 @@ export default {
         'I made this',
         'Another thing'
     ],
-    currentStep: 1,
+    currentStep: 2,
     data: {},
 };

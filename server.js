@@ -35,7 +35,7 @@ async function createPayment(req, res) {
   //   throw createError(400, 'Bad Request');
   // }
   try {
-    const { result, statusCode } = createSquarePayment(payload);
+    const { result, statusCode } = await createSquarePayment(payload);
     send(res, statusCode, {
       success: true,
       payment: {
@@ -133,6 +133,8 @@ async function createOrder(req, res) {
         order: {
           id: result.order.id,
           status: result.order.status,
+          itemName: result.order.lineItems[0].name,
+          price: (Number(result.order.totalMoney.amount) / 100).toFixed(2),
         },
       });
     } catch (ex) {

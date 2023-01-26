@@ -44,50 +44,52 @@
             </aside>
         </section> -->
         <section class="steps">
+            <div id="terminal" class="terminal">
+                <h1>API Call</h1>
+                <p id="api-request"></p>
+            </div>
             <div id="section-step1" class="section-step1">
                 <h1>Create a $10 giftcard</h1>
-                <div id="card-container"></div>
-                <button id="card-button" type="button">Pay $10.00</button>
                 <div id="payment-status-container"></div>
             </div>
-            <div id="section-step2" class="section-step2">
-                <h1>Step 2: Create an Order</h1>
+            <div id="section-step2" class="step-div">
+                <h1>Step 1: Create an Order</h1>
                 <div id="order-container">
-                    <input type="radio" id="Hamburger" name="food" value="2000">
+                    <input type="radio" id="Fancy-Burger" name="food" value="2000">
                     <label for="food1">Fancy Burger - $20.00</label>
-                    <input type="radio" id="Hotdog" name="food" value="1500">
+                    <input type="radio" id="Bratwurst" name="food" value="1500">
                     <label for="food2">Bratwurst - $15.00</label>
                     <input type="radio" id="Charcuterie" name="food" value="3000">
                     <label for="food3">Charcuterie - $30.00</label>
                 </div>
                 <button id="order-button" type="button">Create Order</button>
             </div>
-            <div id="section-step3" class="section-step3">
-                <div style="display: flex; flex-direction:column; margin-right: 5rem;">
-                    <h1>Step3: Make Partial Payments</h1>
-                    <div id="gift-card-container">
-                        <span id="square-gift-card"></span>
-                    </div>
-                    <button id="gift-card-button" type="button">Pay $10</button>
-
-                    <div id="card-container"></div>
-                    <button id="card-button" type="button"></button>
+            <div id="section-step3" class="step-div">
+                <h1>Step 2: Make Partial Payment with Gift Card</h1>
+                <div id="gift-card-container">
+                    <span id="square-gift-card">Gift Card Gan: 7783 3200 0000 0000</span>
                 </div>
-                <aside>
-                    <p role="status" class="visually-hidden">You have done <span class="js-status">1 thing</span> today!
-                    </p>
-                    <div class="[ app__decor ] [ js-count ]" aria-hidden="true">
-                        <small id="order-number-text">Order number: </small>
-                        <small id="gift-card-gan">Gift Card Gan: </small>
-                        <small id="order-title">Item: </small>
-                        <p id="price">Price: </p>
-                    </div>
-                </aside>
-
+                <button id="gift-card-button" type="button">Pay $10</button>
             </div>
             <div id="section-step4" class="section-step4">
-                <h1>Step 4</h1>
-                <p>Content for thing 4</p>
+                <h1>Step 3: Make Partial Payment with Credit Card</h1>
+                <div id="card-container"></div>
+                <button id="card-button" type="button">Pay $X</button>
+            </div>
+            <div id="section-step5" class="section-step5">
+                <h1 style="margin-bottom: 1rem">Step 4: Complete the payment</h1>
+                <button id="complete-payment" type="button">Complete Purchase</button>
+            </div>
+            <div id="order-review" class="order-review">
+                <h1>Review Order</h1>
+                <div id="order-review-inner" class="order-review-inner">
+                    <small id="order-number-text">Order ID: </small>
+                    <small id="item-title">Item: </small>
+                    <small id="price">Order Total: </small>
+                    <small id="applied-gift-card"></small>
+                    <small id="applied-credit-card"></small>
+                    <h3 id="total"> Amount Due: </h3>
+                </div>
             </div>
             <!-- <button type="button" id="next-step" style="margin-top: 2rem;">Next</button> -->
         </section>

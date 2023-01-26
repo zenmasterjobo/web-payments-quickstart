@@ -1,4 +1,7 @@
 const locationId = 'LHJ1ZXJ8YSV8W';
+BigInt.prototype.toJSON = function () {
+    return this.toString();
+};
 
 const getOrder = async (id) => {
     const orderResponse = await fetch(`/order?id=${id}`, {
@@ -134,12 +137,34 @@ export const handlePaymentMethodSubmission = async (event, paymentMethod, cardBu
         cardButton.disabled = true;
         const token = await tokenize(paymentMethod);
         paymentResults = await createPayment(token, paymentData);
-        displayPaymentResults('SUCCESS');
+        // displayPaymentResults('SUCCESS');
         console.debug('Payment Success', paymentResults);
     } catch (e) {
         cardButton.disabled = false;
-        displayPaymentResults('FAILURE');
+        // displayPaymentResults('FAILURE');
         console.error(e.message);
     }
     return paymentResults
+}
+
+export const handleCompletePurchase = async ({ orderId, paymentIds }) => {
+    const body = JSON.stringify({
+        orderId,
+        paymentIds,
+    });
+    try {
+        const completePaymentResponse = await fetch('/complete-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body,
+        });
+
+        if (completePaymentResponse.ok) {
+            return completePaymentResponse.json();
+        }
+    } catch (e) {
+        console.log('erro: ', e)
+    }
 }
