@@ -224,18 +224,29 @@ h1, h2 {
 }
 
 .terminal {
-    width: 400px;
-    height: 400px;
-    overflow-y: scroll;
-    background-color: black;
+    width: 500px;
+    height: auto;
     margin: 1rem;
+    display: flex;
+    flex-direction: column;
 }
 
-.terminal > h1 {
+.terminal-inner {
+    background-color: black;
+    height: 400px;
+    overflow-y: scroll;
+    padding: 1rem;
+}
+
+.response-terminal {
+    margin-top: 2rem;
+}
+
+.terminal-inner > h1 {
     color: white
 }
 
-.terminal > p {
+.terminal-inner > p {
     color: white
 }
 
