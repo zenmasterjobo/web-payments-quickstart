@@ -9,7 +9,7 @@ export default class Step extends Component {
                 step1: document.querySelector('.section-step1'),
                 step2: document.querySelector('#section-step2'),
                 step3: document.querySelector('#section-step3'),
-                step4: document.querySelector('.section-step4'),
+                step4: document.querySelector('#section-step4'),
                 step5: document.querySelector('.section-step5'),
                 orderId: document.getElementById('order-number-text'),
                 itemName: document.getElementById('item-title'),
@@ -42,7 +42,7 @@ export default class Step extends Component {
                 break;
             case 4:
                 this.element.step3.style.display = 'none';
-                this.element.step4.style.display = 'block';
+                this.element.step4.style.display = 'flex';
                 this.element.appliedGiftcard.innerHTML = "Gift Card: -$10.00";
                 this.element.cardButton.innerHTML = `Pay: $${store.state.data.total}`
                 break;

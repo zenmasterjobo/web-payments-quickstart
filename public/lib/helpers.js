@@ -64,7 +64,7 @@ const createPayment = async (token, paymentData) => {
         ...paymentData.body,
     };
 
-    const paymentResponse = await fetch(paymentData.path, {
+    const paymentResponse = await fetch('/payment', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

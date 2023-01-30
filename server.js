@@ -38,12 +38,7 @@ async function createPayment(req, res) {
     const { result, statusCode } = await createSquarePayment(payload);
     send(res, statusCode, {
       success: true,
-      payment: {
-        id: result.payment.id,
-        status: result.payment.status,
-        receiptUrl: result.payment.receiptUrl,
-        orderId: result.payment.orderId,
-      },
+      payment: result.payment,
     });
   } catch (e) {
     console.log('There was an error creating the payment:', e);
@@ -130,12 +125,7 @@ async function createOrder(req, res) {
 
       send(res, statusCode, {
         success: true,
-        order: {
-          id: result.order.id,
-          status: result.order.status,
-          itemName: result.order.lineItems[0].name,
-          price: (Number(result.order.totalMoney.amount) / 100).toFixed(2),
-        },
+        order: result.order,
       });
     } catch (ex) {
       if (ex instanceof ApiError) {
@@ -209,116 +199,6 @@ async function completePayment(req, res) {
   }
 }
 
-async function purchaseGiftCard(req, res) {
-  // Step 1: Create order for the requested amount
-  const payload = await json(req);
-  const idempotencyKey = payload.idempotencyKey || nanoid();
-  let body = {
-    idempotencyKey,
-    order: {
-      locationId: payload.locationId,
-      // fulfillments: [
-      //   {
-      //     type: 'SHIPMENT',
-      //     shipment_details: {
-      //       recipient: {
-      //         display_name: 'John Doe',
-      //       },
-      //     },
-      //   },
-      // ],
-      lineItems: [
-        {
-          name: 'Square Sandbox Giftcard',
-          itemType: 'GIFT_CARD',
-          quantity: '1',
-          basePriceMoney: {
-            amount: 1000,
-            currency: 'USD',
-          },
-        },
-      ],
-    },
-  };
-  let result, statusCode;
-  try {
-    ({ result, statusCode } = await square.ordersApi.createOrder(body));
-  } catch (e) {
-    logger.error('failed to create giftcard order', e);
-  }
-  if (statusCode !== 200) {
-    send(res, statusCode, { success: false });
-    return;
-  }
-
-  // Step 2: Pay for the order
-  const orderId = result.order.id;
-  const lineItemUid = result.order.lineItems[0].uid;
-  const data = {
-    ...payload,
-    orderId,
-    autocomplete: true,
-  };
-
-  ({ result, statusCode } = await createSquarePayment(data));
-  if (statusCode !== 200) {
-    send(res, statusCode, { success: false });
-    return;
-  }
-
-  // Step 3: Create a gift Card
-  try {
-    ({ result, statusCode } = await square.giftCardsApi.createGiftCard({
-      idempotencyKey: nanoid(),
-      locationId: payload.locationId,
-      giftCard: {
-        type: 'DIGITAL',
-      },
-    }));
-  } catch (e) {
-    logger.error('failed to create giftcard', e);
-  }
-
-  if (statusCode !== 200) {
-    send(res, statusCode, { success: false });
-    return;
-  }
-
-  // Step 4: Activate the gift card
-
-  try {
-    ({ result, statusCode } =
-      await square.giftCardActivitiesApi.createGiftCardActivity({
-        idempotencyKey: nanoid(),
-        giftCardActivity: {
-          type: 'ACTIVATE',
-          locationId: payload.locationId,
-          giftCardGan: result.giftCard.gan,
-          activateActivityDetails: {
-            orderId,
-            lineItemUid,
-          },
-        },
-      }));
-
-    console.log(result);
-  } catch (error) {
-    console.log(error);
-  }
-
-  if (statusCode !== 200) {
-    send(res, statusCode, { success: false });
-    return;
-  }
-
-  send(res, statusCode, {
-    success: true,
-    result: {
-      gan: result.giftCardActivity.giftCardGan,
-    },
-  });
-}
-
 // serve static files like index.html and favicon.ico from public/ directory
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
@@ -333,7 +213,6 @@ module.exports = router(
   get('/order', getOrder),
   post('/complete-payment', completePayment),
   post('/payment', createPayment),
-  post('/purchase-gift-card', purchaseGiftCard),
   post('/card', storeCard),
   get('/*', serveStatic)
 );

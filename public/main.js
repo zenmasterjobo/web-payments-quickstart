@@ -1,8 +1,5 @@
 import store from './store/index.js';
 
-// import Count from './components/count.js';
-// import List from './components/list.js';
-// import Status from './components/status.js';
 import Step from './components/step.js';
 import Terminal from './components/terminal.js';
 
@@ -37,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     const cardButton = document.getElementById('card-button');
     cardButton.addEventListener('click', async function (event) {
         const paymentData = {
-            path: '/payment',
             body: {
                 money: store.state.data.total * 100,
                 autocomplete: false,
@@ -55,7 +51,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     const giftCardButton = document.getElementById('gift-card-button');
     giftCardButton.addEventListener('click', async function (event) {
         const paymentData = {
-            path: '/payment',
             body: {
                 money: 1000,
                 autocomplete: false,
@@ -63,8 +58,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         }
         const result = await handlePaymentMethodSubmission(event, giftCard, giftCardButton, paymentData);
+        const amount = (result.payment.amountMoney.amount / 100).toFixed(2)
         store.dispatch('setData', {
-            total: (store.state.data.total - 10).toFixed(2),
+            total: (store.state.data.total - amount).toFixed(2),
             gcPaymentId: result.payment.id,
         })
         store.dispatch('nextStep', 1)
@@ -76,27 +72,35 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 const orderButton = document.getElementById('order-button');
 const completePayment = document.getElementById('complete-payment');
+const copyGiftCard = document.getElementById('square-gift-card');
 
 orderButton.addEventListener('click', async () => {
     const result = await handleCreateOrder();
+    const item = result.order.lineItems[0]
     store.dispatch('setData', {
         orderId: result.order.id,
-        itemName: result.order.itemName,
-        price: result.order.price,
-        total: result.order.price,
+        itemName: item.name,
+        price: (item.basePriceMoney.amount / 100).toFixed(2),
+        total: (result.order.netAmountDueMoney.amount / 100).toFixed(2),
     });
     store.dispatch('nextStep', 1);
 });
 
 completePayment.addEventListener('click', async () => {
     completePayment.disabled = true
-    const result = await handleCompletePurchase({
+    await handleCompletePurchase({
         orderId: store.state.data.orderId,
         paymentIds: [
             store.state.data.ccPaymentId,
             store.state.data.gcPaymentId
         ]
     });
+})
+
+copyGiftCard.addEventListener('click', async () => {
+    navigator.clipboard.writeText('7783 3200 0000 0000');
+    var tooltip = document.getElementById("myTooltip");
+    tooltip.innerHTML = "Copied";
 })
 
 const stepInstance = new Step();

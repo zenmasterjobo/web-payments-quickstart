@@ -2,15 +2,8 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <link rel="stylesheet" href="../global.css" />
-    <link href="../app.css" rel="stylesheet" />
     <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
-    <link rel="stylesheet" media="all"
-        href="https://rawgit.com/hankchizljaw/boilerform/master/dist/css/boilerform.min.css?v=1.1.1" />
-    <title>Partial Payment</title>
 </head>
 
 <body>
@@ -40,23 +33,32 @@
             <div id="section-step2" class="step-div">
                 <h1>Step 1: Create an Order</h1>
                 <div id="order-container">
-                    <input type="radio" id="Fancy-Burger" name="food" value="2000">
-                    <label for="food1">Fancy Burger - $20.00</label>
-                    <input type="radio" id="Bratwurst" name="food" value="1500">
-                    <label for="food2">Bratwurst - $15.00</label>
-                    <input type="radio" id="Charcuterie" name="food" value="3000">
-                    <label for="food3">Charcuterie - $30.00</label>
+                    <div class="radio-div">
+                        <label for="Fancy-Burger">Fancy Burger - $20.00</label>
+                        <input type="radio" id="Fancy-Burger" name="food" value="2000">
+                    </div>
+                    <div class="radio-div">
+                        <label for="Bratwurst">Bratwurst - $15.00</label>
+                        <input type="radio" id="Bratwurst" name="food" value="1500">
+                    </div>
+                    <div class="radio-div">
+                        <label for="Charcuterie">Charcuterie - $30.00</label>
+                        <input type="radio" id="Charcuterie" name="food" value="3000">
+                    </div>
                 </div>
                 <button id="order-button" type="button">Create Order</button>
             </div>
             <div id="section-step3" class="step-div">
                 <h1>Step 2: Make Partial Payment with Gift Card</h1>
                 <div id="gift-card-container">
-                    <span id="square-gift-card">Gift Card Gan: 7783 3200 0000 0000</span>
+                    <div class="tooltip">
+                        <span id="square-gift-card">Gift Card Gan: 7783 3200 0000 0000</span>
+                        <span id="myTooltip" class="tooltiptext">Copy to Clipboard</span>
+                    </div>
                 </div>
                 <button id="gift-card-button" type="button">Pay $10</button>
             </div>
-            <div id="section-step4" class="section-step4">
+            <div id="section-step4" class="step-div">
                 <h1>Step 3: Make Partial Payment with Credit Card</h1>
                 <div id="card-container"></div>
                 <button id="card-button" type="button">Pay $X</button>
