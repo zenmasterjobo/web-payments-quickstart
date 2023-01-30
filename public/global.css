@@ -195,7 +195,6 @@ h1, h2 {
     position: absolute;
 }
 
-
 .steps {
     margin-top: 2rem;
     display: flex;
@@ -215,7 +214,7 @@ h1, h2 {
   grid-gap: 2rem;
 }
 
-.section-step4 {
+.section-step3 {
     display: none;
 }
 .section-step5 {
@@ -449,10 +448,12 @@ button:disabled {
     line-height: 16px;
 }
 
-.radio-div{
+.radio-div {
     display: flex;
     justify-content: space-between;
     margin-bottom: 1rem;
 }
 
-
+.credit-card-section {
+    display: none;
+}

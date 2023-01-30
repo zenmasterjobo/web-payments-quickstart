@@ -88,7 +88,6 @@ const createPayment = async (token, paymentData) => {
 }
 
 const tokenize = async (paymentMethod) => {
-    console.log('the payment method: ', paymentMethod)
     const tokenResult = await paymentMethod.tokenize();
     if (tokenResult.status === 'OK') {
         return tokenResult.token;

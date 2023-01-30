@@ -41,8 +41,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         }
         const result = await handlePaymentMethodSubmission(event, card, cardButton, paymentData);
+        const amount = (result.payment.amountMoney.amount / 100).toFixed(2)
         store.dispatch('setData', {
-            ccPaymentId: result.payment.id
+            ccPaymentId: result.payment.id,
+            ccAmountPaid: amount,
+            total: 0,
         })
         store.dispatch('nextStep', 1);
 
@@ -62,9 +65,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         store.dispatch('setData', {
             total: (store.state.data.total - amount).toFixed(2),
             gcPaymentId: result.payment.id,
+            gcAmountPaid: amount,
         })
-        store.dispatch('nextStep', 1)
-
+        giftCardButton.disabled = true;
+        document.getElementById('credit-card-section').style.display = 'block';
     });
 
 

@@ -8,8 +8,7 @@ export default class Step extends Component {
             element: {
                 step1: document.querySelector('#section-step1'),
                 step2: document.querySelector('#section-step2'),
-                step3: document.querySelector('#section-step3'),
-                step4: document.querySelector('.section-step4'),
+                step3: document.querySelector('.section-step3'),
                 orderId: document.getElementById('order-number-text'),
                 itemName: document.getElementById('item-title'),
                 price: document.getElementById('price'),
@@ -34,18 +33,13 @@ export default class Step extends Component {
                 this.element.itemName.innerHTML = `Item: ${store.state.data.itemName}`;
                 this.element.price.innerHTML = `Order Total: $${store.state.data.price}`;
                 this.element.total.innerHTML = `Amount Due: $${store.state.data.total}`;
+                this.element.appliedGiftcard.innerHTML = store.state.data.gcAmountPaid ? `Gift Card: -$${store.state.data.gcAmountPaid}` : "";
+                this.element.cardButton.innerHTML = `Pay: $${store.state.data.total}`
+                this.element.appliedCreditcard.innerHTML = store.state.data.ccAmountPaid ? `Credit Card: -$${store.state.data.ccAmountPaid}` : "";
                 break;
             case 3:
                 this.element.step2.style.display = 'none';
-                this.element.step3.style.display = 'flex';
-                this.element.appliedGiftcard.innerHTML = "Gift Card: -$10.00";
-                this.element.cardButton.innerHTML = `Pay: $${store.state.data.total}`
-                break;
-            case 4:
-                this.element.step3.style.display = 'none';
-                this.element.step4.style.display = 'block';
-                this.element.appliedCreditcard.innerHTML = `Credit Card: -$${store.state.data.total}`;
-                this.element.total.innerHTML = 'Amount Due: $0';
+                this.element.step3.style.display = 'block';
                 break;
             default:
                 this.nextButton.disabled = true;
