@@ -8,7 +8,7 @@ import Step from './components/step.js';
 import Terminal from './components/terminal.js';
 
 import {
-  handleCreateOrder,
+  createOrder,
   handlePaymentMethodSubmission,
   initializeCards,
   handleCompletePurchase,
@@ -51,7 +51,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       event,
       card,
       cardButton,
-      paymentData
+      paymentData,
+      locationId
     );
     const amount = (result.payment.amountMoney.amount / 100).toFixed(2);
     store.dispatch('setData', {
@@ -93,7 +94,7 @@ const completePayment = document.getElementById('complete-payment');
 const copyGiftCard = document.getElementById('square-gift-card');
 
 orderButton.addEventListener('click', async () => {
-  const result = await handleCreateOrder();
+  const result = await createOrder(locationId);
   const item = result.order.lineItems[0];
   store.dispatch('setData', {
     orderId: result.order.id,

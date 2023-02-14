@@ -39,7 +39,7 @@ export default class Step extends Component {
         this.element.appliedGiftcard.innerHTML = store.state.data.gcAmountPaid
           ? `Gift Card: -$${store.state.data.gcAmountPaid}`
           : '';
-        this.element.cardButton.innerHTML = `Pay: $${store.state.data.total}`;
+        this.element.cardButton.innerHTML = `Pay $${store.state.data.total}`;
         this.element.appliedCreditcard.innerHTML = store.state.data.ccAmountPaid
           ? `Credit Card: -$${store.state.data.ccAmountPaid}`
           : '';

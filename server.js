@@ -1,3 +1,5 @@
+/* eslint-disable eslint-comments/disable-enable-pair */
+/* eslint-disable no-undef */
 // micro provides http helpers
 const { createError, json, send } = require('micro');
 // microrouter provides http server routing
@@ -35,10 +37,11 @@ async function createPayment(req, res) {
   //   throw createError(400, 'Bad Request');
   // }
   try {
-    const { result, statusCode } = await createSquarePayment(payload);
+    const { result, statusCode, payment } = await createSquarePayment(payload);
     send(res, statusCode, {
       success: true,
       payment: result.payment,
+      request: payment,
     });
   } catch (e) {
     console.log('There was an error creating the payment:', e);
@@ -181,11 +184,7 @@ async function completePayment(req, res) {
 
     send(res, statusCode, {
       success: true,
-      order: {
-        id: result.order.id,
-        status: result.order.state,
-        result: result.order,
-      },
+      order: result,
     });
   } catch (ex) {
     if (ex instanceof ApiError) {

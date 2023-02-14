@@ -7,12 +7,11 @@
 /* eslint-disable func-style */
 import store from '../store/index.js';
 
-const locationId = 'LHJ1ZXJ8YSV8W';
 BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
-const createOrder = async () => {
+export const createOrder = async (locationId) => {
   const value = document.querySelector('input[name="food"]:checked').value;
   const id = document.querySelector('input[name="food"]:checked').id;
 
@@ -43,7 +42,7 @@ const createOrder = async () => {
     store.dispatch('setData', {
       requestBody: JSON.stringify(body, null, 4),
       apiCall: 'POST /v2/orders',
-      responseBody: JSON.stringify(response, null, 4),
+      responseBody: JSON.stringify(response.order, null, 4),
     });
     return response;
   }
@@ -52,17 +51,7 @@ const createOrder = async () => {
   throw new Error(errorBody);
 };
 
-export const handleCreateOrder = async () => {
-  let orderResult;
-  try {
-    orderResult = await createOrder();
-  } catch (e) {
-    console.log('no good:', e);
-  }
-  return orderResult;
-};
-
-const createPayment = async (token, paymentData) => {
+const createPayment = async (token, paymentData, locationId) => {
   const body = {
     locationId,
     sourceId: token,
@@ -81,9 +70,9 @@ const createPayment = async (token, paymentData) => {
     const response = await paymentResponse.json();
     console.log({ response });
     store.dispatch('setData', {
-      requestBody: JSON.stringify(body, null, 4),
+      requestBody: JSON.stringify(response.request, null, 4),
       apiCall: 'POST /v2/payments',
-      responseBody: JSON.stringify(response, null, 4),
+      responseBody: JSON.stringify(response.payment, null, 4),
     });
     return response;
   }
@@ -133,7 +122,8 @@ export const handlePaymentMethodSubmission = async (
   event,
   paymentMethod,
   cardButton,
-  paymentData
+  paymentData,
+  locationId
 ) => {
   event.preventDefault();
   let paymentResults;
@@ -141,7 +131,7 @@ export const handlePaymentMethodSubmission = async (
     // disable the submit button as we await tokenization and make a payment request.
     cardButton.disabled = true;
     const token = await tokenize(paymentMethod);
-    paymentResults = await createPayment(token, paymentData);
+    paymentResults = await createPayment(token, paymentData, locationId);
     console.debug('Payment Success', paymentResults);
   } catch (e) {
     cardButton.disabled = false;
@@ -169,7 +159,7 @@ export const handleCompletePurchase = async ({ orderId, paymentIds }) => {
       store.dispatch('setData', {
         requestBody: JSON.stringify(body, null, 4),
         apiCall: `POST /v2/orders/${store.state.data.orderId}/pay`,
-        responseBody: JSON.stringify(response, null, 4),
+        responseBody: JSON.stringify(response.order, null, 4),
       });
       displayPaymentResults('SUCCESS');
       return response;
