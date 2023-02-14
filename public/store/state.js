@@ -1,4 +1,4 @@
 export default {
-    currentStep: 1,
-    data: {},
+  currentStep: 1,
+  data: {},
 };
