@@ -11,9 +11,6 @@ const createSquarePayment = async (payload) => {
   let payment, result, statusCode;
   await retry(async (bail, attempt) => {
     try {
-      console.log('hello');
-      logger.debug('Creating payment', { attempt });
-
       const idempotencyKey = payload.idempotencyKey || nanoid();
       payment = {
         idempotencyKey,
@@ -27,7 +24,7 @@ const createSquarePayment = async (payload) => {
         // See Orders documentation: https://developer.squareup.com/docs/orders-api/what-it-does
         amountMoney: {
           // the expected amount is in cents, meaning this is $1.00.
-          amount: payload.money || 2000000,
+          amount: payload.money || 100,
           // If you are a non-US account, you must change the currency to match the country in which
           // you are accepting the payment.
           currency: 'USD',
@@ -63,7 +60,6 @@ const createSquarePayment = async (payload) => {
         cardDetails,
       });
     } catch (ex) {
-      console.log('we are catching', ex);
       if (ex instanceof ApiError) {
         // likely an error in the request. don't retry
         logger.error(ex.errors);

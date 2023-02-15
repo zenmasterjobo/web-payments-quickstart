@@ -24,6 +24,7 @@ const displayPaymentResults = (status) => {
   statusContainer.style.visibility = 'visible';
 };
 
+// Step 1 Function: This is called to create the order.
 export const createOrder = async (locationId) => {
   const value = document.querySelector('input[name="food"]:checked').value;
   const id = document.querySelector('input[name="food"]:checked').id;
@@ -43,6 +44,7 @@ export const createOrder = async (locationId) => {
   };
 
   try {
+    // This calls createOrder() in server.js
     const orderResponse = await fetch('/create-order', {
       method: 'POST',
       headers: {
@@ -73,6 +75,7 @@ const createPayment = async (token, paymentData, locationId) => {
     ...paymentData.body,
   };
 
+  // This calls createPayment() in server.js
   const paymentResponse = await fetch('/payment', {
     method: 'POST',
     headers: {
@@ -110,16 +113,8 @@ const tokenize = async (paymentMethod) => {
   }
 };
 
-export const initializeCards = async (payments) => {
-  const card = await payments.card();
-  await card.attach('#card-container');
-
-  const giftCard = await payments.giftCard();
-  await giftCard.attach('#gift-card-container');
-
-  return { card, giftCard };
-};
-
+// Step 2 Function: This method handles the payment submission for both
+// the gift card and the credit card
 export const handlePaymentMethodSubmission = async (
   event,
   paymentMethod,
@@ -142,12 +137,15 @@ export const handlePaymentMethodSubmission = async (
   return paymentResults;
 };
 
+// Step 3 Function: Submit the authorized payments to
+// complete the purchase of the order
 export const handleCompletePurchase = async ({ orderId, paymentIds }) => {
   const body = {
     orderId,
     paymentIds,
   };
   try {
+    // This calls completePayment() in server.js
     const completePaymentResponse = await fetch('/complete-payment', {
       method: 'POST',
       headers: {
@@ -170,4 +168,14 @@ export const handleCompletePurchase = async ({ orderId, paymentIds }) => {
     displayPaymentResults('FAILURE');
     console.log('error:', e);
   }
+};
+
+export const initializeCards = async (payments) => {
+  const card = await payments.card();
+  await card.attach('#card-container');
+
+  const giftCard = await payments.giftCard();
+  await giftCard.attach('#gift-card-container');
+
+  return { card, giftCard };
 };

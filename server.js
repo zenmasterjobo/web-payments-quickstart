@@ -144,21 +144,6 @@ async function createOrder(req, res) {
   });
 }
 
-async function getOrder(req, res) {
-  const { id } = req.query;
-  try {
-    const { result, statusCode } = await square.ordersApi.retrieveOrder(id);
-    logger.info('Retrieve Order succeeded!', {
-      result,
-      statusCode,
-    });
-
-    send(res, statusCode, result);
-  } catch (e) {
-    logger.error('Error fetching order', e);
-  }
-}
-
 async function completePayment(req, res) {
   const payload = await json(req);
   logger.debug(JSON.stringify(payload));
@@ -209,7 +194,6 @@ async function serveStatic(req, res) {
 // export routes to be served by micro
 module.exports = router(
   post('/create-order', createOrder),
-  get('/order', getOrder),
   post('/complete-payment', completePayment),
   post('/payment', createPayment),
   post('/card', storeCard),

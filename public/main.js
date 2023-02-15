@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   try {
     payments = window.Square.payments(appId, locationId);
   } catch {
-    const statusContainer = document.getElementById('payment-status-container');
+    const statusContainer = document.getElementById('order-status-container');
     statusContainer.className = 'missing-credentials';
     statusContainer.style.visibility = 'visible';
     return;
@@ -65,6 +65,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   const giftCardButton = document.getElementById('gift-card-button');
   giftCardButton.addEventListener('click', async function (event) {
+    // A note about this implementation and square sandbox.
+    // The Square Test Gift Card has an unlimited balance.
+    // If you want your user to submit a payment with a giftcard up to
+    // the giftcard's maximum balance, you can create a payment with the
+    // giftcard token but leave the money value empty in your request to the api.
+
+    // In our example below we are just doing approving a flat rate of $10.00 on
+    // the test gift card, and then paying the rest of the balance with credit card.
     const paymentData = {
       body: {
         money: 1000,
