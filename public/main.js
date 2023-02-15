@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 const orderButton = document.getElementById('order-button');
 const completePayment = document.getElementById('complete-payment');
 const copyGiftCard = document.getElementById('square-gift-card');
+const copyCreditCard = document.getElementById('square-credit-card');
 const requestTerminal = document.getElementById('request-terminal');
 const responseTerminal = document.getElementById('response-terminal');
 
@@ -117,7 +118,13 @@ completePayment.addEventListener('click', async () => {
 
 copyGiftCard.addEventListener('click', () => {
   navigator.clipboard.writeText('7783 3200 0000 0000');
-  const tooltip = document.getElementById('myTooltip');
+  const tooltip = document.getElementById('gcTooltip');
+  tooltip.innerHTML = 'Copied';
+});
+
+copyCreditCard.addEventListener('click', () => {
+  navigator.clipboard.writeText('4111 1111 1111 1111');
+  const tooltip = document.getElementById('cardTooltip');
   tooltip.innerHTML = 'Copied';
 });
 
