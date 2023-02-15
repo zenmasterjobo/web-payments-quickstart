@@ -14,8 +14,8 @@ import {
   handleCompletePurchase,
 } from './lib/helpers.js';
 
-const appId = 'sandbox-sq0idb-EdHsYlG8TPVZUe8vt1jHxg';
-const locationId = 'LHJ1ZXJ8YSV8W';
+const appId = '{APPLICATION_ID}';
+const locationId = '{LOCATION_ID}';
 
 document.addEventListener('DOMContentLoaded', async function () {
   if (!window.Square) {
