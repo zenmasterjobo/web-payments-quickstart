@@ -11,6 +11,19 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
+const displayPaymentResults = (status) => {
+  const statusContainer = document.getElementById('payment-status-container');
+  if (status === 'SUCCESS') {
+    statusContainer.classList.remove('is-failure');
+    statusContainer.classList.add('is-success');
+  } else {
+    statusContainer.classList.remove('is-success');
+    statusContainer.classList.add('is-failure');
+  }
+
+  statusContainer.style.visibility = 'visible';
+};
+
 export const createOrder = async (locationId) => {
   const value = document.querySelector('input[name="food"]:checked').value;
   const id = document.querySelector('input[name="food"]:checked').id;
@@ -29,26 +42,28 @@ export const createOrder = async (locationId) => {
     ],
   };
 
-  const orderResponse = await fetch('/create-order', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (orderResponse.ok) {
-    const response = await orderResponse.json();
-    store.dispatch('setData', {
-      requestBody: JSON.stringify(body, null, 4),
-      apiCall: 'POST /v2/orders',
-      responseBody: JSON.stringify(response.order, null, 4),
+  try {
+    const orderResponse = await fetch('/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
-    return response;
-  }
 
-  const errorBody = await orderResponse.text();
-  throw new Error(errorBody);
+    if (orderResponse.ok) {
+      const response = await orderResponse.json();
+      store.dispatch('setData', {
+        requestBody: JSON.stringify(body, null, 4),
+        apiCall: 'POST /v2/orders',
+        responseBody: JSON.stringify(response.order, null, 4),
+      });
+      return response;
+    }
+  } catch (e) {
+    displayPaymentResults('FAILURE');
+    console.log('error:', e);
+  }
 };
 
 const createPayment = async (token, paymentData, locationId) => {
@@ -93,19 +108,6 @@ const tokenize = async (paymentMethod) => {
 
     throw new Error(errorMessage);
   }
-};
-
-const displayPaymentResults = (status) => {
-  const statusContainer = document.getElementById('payment-status-container');
-  if (status === 'SUCCESS') {
-    statusContainer.classList.remove('is-failure');
-    statusContainer.classList.add('is-success');
-  } else {
-    statusContainer.classList.remove('is-success');
-    statusContainer.classList.add('is-failure');
-  }
-
-  statusContainer.style.visibility = 'visible';
 };
 
 export const initializeCards = async (payments) => {
@@ -166,7 +168,6 @@ export const handleCompletePurchase = async ({ orderId, paymentIds }) => {
     }
   } catch (e) {
     displayPaymentResults('FAILURE');
-
     console.log('error:', e);
   }
 };

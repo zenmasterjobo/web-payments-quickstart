@@ -92,6 +92,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 const orderButton = document.getElementById('order-button');
 const completePayment = document.getElementById('complete-payment');
 const copyGiftCard = document.getElementById('square-gift-card');
+const requestTerminal = document.getElementById('request-terminal');
+const responseTerminal = document.getElementById('response-terminal');
 
 orderButton.addEventListener('click', async () => {
   const result = await createOrder(locationId);
@@ -117,6 +119,15 @@ copyGiftCard.addEventListener('click', () => {
   navigator.clipboard.writeText('7783 3200 0000 0000');
   const tooltip = document.getElementById('myTooltip');
   tooltip.innerHTML = 'Copied';
+});
+
+requestTerminal.addEventListener('click', () => {
+  console.log('hellooo');
+  requestTerminal.classList.toggle('is-active');
+});
+
+responseTerminal.addEventListener('click', () => {
+  responseTerminal.classList.toggle('is-active');
 });
 
 const stepInstance = new Step();

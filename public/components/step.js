@@ -11,7 +11,7 @@ export default class Step extends Component {
       element: {
         step1: document.querySelector('#section-step1'),
         step2: document.querySelector('#section-step2'),
-        step3: document.querySelector('.section-step3'),
+        step3: document.querySelector('#section-step3'),
         orderId: document.getElementById('order-number-text'),
         itemName: document.getElementById('item-title'),
         price: document.getElementById('price'),
@@ -46,7 +46,7 @@ export default class Step extends Component {
         break;
       case 3:
         this.element.step2.style.display = 'none';
-        this.element.step3.style.display = 'block';
+        this.element.step3.style.display = 'flex';
         break;
       default:
         this.nextButton.disabled = true;
