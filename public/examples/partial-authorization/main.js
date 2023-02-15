@@ -2,17 +2,17 @@
 /* eslint-disable require-atomic-updates */
 /* eslint-disable unicorn/import-index */
 /* eslint-disable import/extensions */
-import store from '../../store/index.js';
+import store from './store/index.js';
 
-import Step from '../../components/step.js';
-import Terminal from '../../components/terminal.js';
+import Step from './components/step.js';
+import Terminal from './components/terminal.js';
 
 import {
   createOrder,
   handlePaymentMethodSubmission,
   initializeCards,
   handleCompletePurchase,
-} from '../../lib/helpers.js';
+} from './lib/helpers.js';
 
 document.addEventListener('DOMContentLoaded', async function () {
   if (!window.Square) {
