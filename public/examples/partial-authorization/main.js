@@ -14,9 +14,6 @@ import {
   handleCompletePurchase,
 } from '../../lib/helpers.js';
 
-// const appId = '{APPLICATION_ID}';
-// const locationId = '{LOCATION_ID}';
-
 document.addEventListener('DOMContentLoaded', async function () {
   if (!window.Square) {
     throw new Error('Square.js failed to load properly');
